@@ -5,35 +5,51 @@ set -o pipefail
 
 baseDir="../src/main/resources/solidity"
 
-targets="
-deposit/Deposit
+generateTargets="
+deposit/deposit
 "
 
-for target in ${targets}; do
+compileGenerateTargets="
+withdraw/DepositProxy
+sharednode/SharedMasternode
+"
+
+
+for target in ${generateTargets}; do
     dirName=$(dirname "${target}")
     fileName=$(basename "${target}")
 
     cd $baseDir
-#    echo "Compiling Solidity file ${target}.sol"
+    echo "Generating contract bindings"
+    web3j solidity generate \
+        ${dirName}/build/${fileName}.bin \
+        ${dirName}/build/${fileName}.abi \
+        -p com.psdev.pirl.contracts.generated \
+        -o ../../java/ > /dev/null
 
-#    solc --bin --abi --optimize --overwrite \
-#            --allow-paths "$(pwd)" \
-#            ${dirName}/${fileName}.sol -o ${dirName}/build/
-#    echo "Complete"
+    echo "Complete"
+
+    cd -
+done
+
+for target in ${compileGenerateTargets}; do
+    dirName=$(dirname "${target}")
+    fileName=$(basename "${target}")
+
+    cd $baseDir
+    echo "Compiling Solidity file ${target}.sol"
+
+    solc --bin --abi --optimize --overwrite \
+            --allow-paths "$(pwd)" \
+            ${dirName}/${fileName}.sol -o ${dirName}/build/
+    echo "Complete"
 
     echo "Generating contract bindings"
     web3j solidity generate \
         ${dirName}/build/${fileName}.bin \
         ${dirName}/build/${fileName}.abi \
-        -p org.web3j.sample.contracts.generated \
+        -p com.psdev.pirl.contracts.generated \
         -o ../../java/ > /dev/null
-
-    web3j solidity generate --solidityTypes \
-        ${dirName}/build/${fileName}.bin \
-        ${dirName}/build/${fileName}.abi \
-        -p org.web3j.sample.contracts.generated.solidity \
-        -o ../../java/ > /dev/null
-
 
     echo "Complete"
 

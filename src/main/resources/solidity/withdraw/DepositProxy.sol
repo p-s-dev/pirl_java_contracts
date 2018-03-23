@@ -38,18 +38,4 @@ contract DepositProxy {
         deposit.withdrawStake();
     }
 
-
-  function callSetN(address _e, uint _n) {
-    _e.call(bytes4(sha3("setN(uint256)")), _n); // E's storage is set, D is not modified
-  }
-
-  function callcodeSetN(address _e, uint _n) {
-    _e.callcode(bytes4(sha3("setN(uint256)")), _n); // D's storage is set, E is not modified
-  }
-
-  function delegatecallSetN(address _e, uint _n) {
-    _e.delegatecall(bytes4(sha3("setN(uint256)")), _n); // D's storage is set, E is not modified
-  }
-
-
 }
