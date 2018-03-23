@@ -1,0 +1,25 @@
+group 'com.psdev.pirl'
+version '0.0.1'
+
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+ext {
+    web3jVersion = '3.3.2'
+    logbackVersion = '1.2.3'
+    junitVersion = '4.12'
+    jacksonVersion = '2.8.5'
+}
+
+dependencies {
+    compile "org.web3j:core:$web3jVersion",
+            "ch.qos.logback:logback-core:$logbackVersion",
+            "ch.qos.logback:logback-classic:$logbackVersion"
+    testCompile "junit:junit:$junitVersion"
+}
