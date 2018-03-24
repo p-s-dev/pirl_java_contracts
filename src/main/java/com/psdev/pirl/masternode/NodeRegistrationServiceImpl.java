@@ -28,7 +28,7 @@ import static org.web3j.utils.Numeric.toHexString;
 
 @Slf4j
 @Service
-public class ContractServiceImpl implements ContractService {
+public class NodeRegistrationServiceImpl implements NodeRegistrationService {
 
     @Autowired
     Web3j web3j;
@@ -99,9 +99,6 @@ public class ContractServiceImpl implements ContractService {
     }
 
     private Deposit getContractAuthorizedForUser(int userNumber) throws Exception {
-//        if (!isContractDeployed()) {
-//            deployContract();
-//        }
 
         Deposit userContract =
                 Deposit.load(contractAddress(), web3j, userCredentialsManager.getUser(userNumber), gasPrice, gasLimit);

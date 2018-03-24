@@ -1,97 +1,147 @@
-pragma solidity ^0.4.2;
+// contract MasternodeRegistrationContract {
+//     function nodeRegistration() public payable;
+//     function disableNode() public;
+//     function withdrawStake() public;
+//     function getNodeEnabledStatus() public constant returns(bool);
+//     function nodeCost() public constant returns(uint256);
+// }
 
-/**
+contract MockMasternodeRegistrationContract {
+    bool nodeEnabled = false;
 
-
-Rules:
-
-  a majority of contributors can end payment period at any time?
-  funds are locked for a minimum period, no matter if operator is active?
-  lock period can be ended if operator shown to be inactive? (contributor can claim mn is not getting paid like it should be)
-  operator has time period in which to dispute inactive claim. ( they can submit a transaction which shows mn is getting paid)
-
-
-
-**/
-
-contract SharedMasternode {
-
-//address[] users = {};
-//int count_users = 0;
-//int partitions = 1;  // number of funders to divide the 20k between
-//
-//address mn_deposit_contract = 0xFFFF;
-//address developer = 0x000;
-//address operator = 0x1111;
-//address min_lock_period; // number of blocks that deposits will be locked, no matter if operator is active
-//
-//int balance_at_freeze = 0;
-//int contributor_payment_share = 0;
-//
-//int operator_fee_percent = 9;
-//int developer_fee_percent = 1;
-//int operator_fee = 0;
-//int developer_fee = 0;
-//
-//bool started = false;
-//
-//public contribute(int positionId) {
-//assert (positionId > 0 && positionId < partitions)
-//assert (msg.value=20k/partitions);
-//assert (count_users < partitions);
-//assert (users[positionId] == 0x000)
-//assert(started == false)
-//
-//address[positionId] = msg.sender;
-//count_users++;
-//}
-//
-//public unncontribute(int positionId) {
-//
-//assert (msg.value=0);
-//assert (users[positionId] == msg.sender)
-//
-//assert (count_users < partitions);
-//assert(started == false)
-//
-//address[positionId] = 0x0;
-//count_users--;
-//}
-//
-//
-//public start_lockout(int userid) {
-//assert(this.value = 20k)
-//assert(started == false)
-//assert(users[userid] == msg.sender) // only member can initiate the deposit
-//msg.send(this.value)(	mn_deposit_contract )
-//started = true;
-//
-//}
-//
-////TODO when to allow end payment period?  How to prove operator inactive?
-//public end_lockout(int userid) {
-//// freeze claims.  future mn payments will not be available to be claimed.
-//
-//// if current block
-//
-//balance_at_freeze = this.value;
-//// take total, minus dev, minus operator, divide by participants, save in contributor_payment_share;
-//
-//}
-//
-//
-//
-//public claim (int positionId) {
-//
-//if (users[positionId] == msg.sender) {
-//users[positionId] = 0x0;
-//msg.send(msg.sender)(contributor_payment_share);
-//
-//}
-//
-//}
-//
-
-
+    function nodeRegistration() public payable {
+    }
+    function disableNode() public { }
+    function withdrawStake() public {
+        msg.sender.transfer(2 ether);
+    }
+    function nodeCost() public constant returns(uint256) {
+        return 2 ether;
+    }
+    function getBalance() public constant returns(uint){
+        return this.balance;
+    }
 
 }
+
+
+contract owned {
+    function owned() public { owner = msg.sender; }
+    address owner;
+
+    modifier onlyOwner {
+        require(msg.sender == owner);
+        _;
+    }
+}
+
+contract fundinglimited is owned {
+    function fundinglimited() public {
+        payer = address(0xdd870fa1b7c4700f2bd7f44238821c26f7392148);
+    }
+    address payer;
+
+    function changepayer(address _newpayer) public onlyOwner {
+        payer = _newpayer;
+    }
+
+    modifier onlyPayer {
+        require(msg.sender == payer);
+        _;
+    }
+
+    modifier onlyNonContracts {
+        require(msg.sender == tx.origin);
+        // uint size;
+        // address addr = msg.sender;
+        // assembly { size := extcodesize(addr) }
+        // require(size == 0);
+        _;
+    }
+
+}
+
+contract RewardSplitter is fundinglimited {
+
+    address[] public investors;
+
+    uint public lastPayBlock;
+    uint256 public investorDeposit;
+    bool public masternodeCancelled = false;
+
+    MockMasternodeRegistrationContract registrationContract;
+
+    function RewardSplitter(address _registrationContractAddr) {
+        registrationContract = MockMasternodeRegistrationContract(_registrationContractAddr);
+        investorDeposit = registrationContract.nodeCost() / 4;
+        lastPayBlock = now - 1 days;
+    }
+
+    function() public payable onlyPayer {
+        require(investors.length == 4);
+
+        // uint share = (msg.value - 0.1 ether) / 3;           // fixed fee
+        uint share = (msg.value - (msg.value / 20)) / 3;    // 5% fee to operator
+
+        if (share > 0.5 ether) {
+            lastPayBlock = block.timestamp;
+        }
+
+        investors[0].transfer(share);
+        investors[1].transfer(share);
+        investors[2].transfer(share);
+        investors[3].transfer(share);
+        owner.transfer(this.balance);
+    }
+
+    function register() public payable onlyNonContracts {
+        require(investors.length < 4);
+        //require(msg.value == 5000 ether);
+        require(msg.value == investorDeposit);
+        investors.push(tx.origin);
+        // if (investors.length == 4) {
+        //     registrationContract.nodeRegistration.value(
+        //         registrationContract.nodeCost());
+        // }
+    }
+
+    function startNode() public {
+        // uint256 nodeCost = 500000000000000000;
+        // //registrationContract.nodeRegistration.value(nodeCost)();
+        registrationContract.call.value(5000000000000).gas(20764)( bytes4(sha3("nodeRegistration()")), 4);
+        // registrationContract.call.gas(20764)( bytes4(sha3("nodeRegistration()")), 4);
+        // //registrationContract.call.value(nodeCost)(bytes4(sha3("nodeRegistration()")));
+        //registrationContract.nodeRegistration.value(500000000000000000)();
+
+        // if (investors.length == 4) {
+        //     uint256 nodeCost = registrationContract.nodeCost();
+        //     registrationContract.call.value(nodeCost)(bytes4(sha3("nodeRegistration()")));
+        // }
+    }
+
+    function cancelInactiveNode(uint256 _userId) public {
+        require(masternodeCancelled == false);
+        require(_userId >= 0 && _userId < investors.length);
+        require(tx.origin == investors[_userId]);
+        if (now - 1 days > lastPayBlock) {
+            masternodeCancelled = true;
+            registrationContract.disableNode();
+            registrationContract.withdrawStake();
+        }
+    }
+
+    function withdraw(uint256 _userId) public onlyNonContracts {
+        require(masternodeCancelled == true || investors.length < 4);
+        require(_userId >= 0 && _userId < investors.length);
+        require(tx.origin == investors[_userId]);
+        investors[_userId] = address(0x0);
+        //tx.origin.transfer(5000 ether);
+        tx.origin.transfer(investorDeposit);
+    }
+
+    function getBalance() public constant returns(uint){
+        return this.balance;
+    }
+
+}
+

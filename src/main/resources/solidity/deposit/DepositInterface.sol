@@ -1,8 +1,12 @@
 pragma solidity ^0.4.2;
 
-contract DepositInterface {
+contract MockMasternodeRegistrationContract {
+    bool nodeEnabled = false;
     function nodeRegistration() public payable;
     function disableNode() public;
     function withdrawStake() public;
-    function getNodeEnabledStatus() constant returns(bool index);
+    function getNodeEnabledStatus() public constant returns(bool) {
+
+    }
+    function nodeCost() public constant returns(uint256);
 }

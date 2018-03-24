@@ -1,6 +1,6 @@
 package com.psdev.pirl;
 
-import com.psdev.pirl.masternode.ContractServiceImpl;
+import com.psdev.pirl.masternode.NodeRegistrationServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Test;
@@ -14,10 +14,10 @@ import java.math.BigInteger;
 @Slf4j
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment= SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class ContractServiceIT {
+public class NodeRegistrationServiceIT {
 
     @Autowired
-    ContractServiceImpl contractService;
+    NodeRegistrationServiceImpl contractService;
 
     @Test
     public void canDeployAndRegister() throws Exception {
