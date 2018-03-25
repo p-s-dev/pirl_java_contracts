@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.RawTransaction;
+import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.tx.Contract;
 
 import java.math.BigInteger;
@@ -23,35 +24,59 @@ public class NodeRegistrationServiceImpl extends AbstractContractService impleme
     @Value("${contract.bin.masternode.deploy.smalldeposit}")
     String contractBin;
 
-    private PirlMasternodeDeposit adminContract;
+    private PirlMasternodeDeposit pirlMasternodeDeposit;
     private BigInteger nodeRegistrationCost;
 
     @Override
-    public void enableNodeRegistration() throws Exception {
-        isTrue(contractDeployed(adminContract), "Error deploying contract");
+    public PirlMasternodeDeposit enableNodeRegistration() throws Exception {
+        isTrue(contractDeployed(pirlMasternodeDeposit), "Error deploying pirlMasternodeDeposit contract");
 
-        log.info("isRegistrationEnabled=" + adminContract.nodeRegistrationEnabled().send());
-        adminContract.enableNodeRegistration().send();
-        log.info("isRegistrationEnabled=" + adminContract.nodeRegistrationEnabled().send());
-
+        Boolean isEnabled = pirlMasternodeDeposit.nodeRegistrationEnabled().send();
+        if (!isEnabled) {
+            log.info("isRegistrationEnabled=" + pirlMasternodeDeposit.nodeRegistrationEnabled().send());
+            pirlMasternodeDeposit.enableNodeRegistration().send();
+            log.info("isRegistrationEnabled=" + pirlMasternodeDeposit.nodeRegistrationEnabled().send());
+        } else {
+            log.info("pirlMasternodeDeposit already enabled");
+        }
+        return pirlMasternodeDeposit;
     }
 
     @Override
     public void registerNodeForUser(int userId) throws Exception {
-        isTrue(contractDeployed(adminContract), "Error deploying contract");
+        isTrue(contractDeployed(pirlMasternodeDeposit), "Error deploying pirlMasternodeDeposit contract");
 
         String userAddress = userCredentialsManager.getUserAddress(userId);
 
-        log.info("userId=" + userId + " isNodeEnabled=" + adminContract.nodes(userAddress).send().getValue5());
+        log.info("userId=" + userId + " isNodeEnabled=" + pirlMasternodeDeposit.nodes(userAddress).send().getValue5());
         getContractAuthorizedForUser(userId).nodeRegistration(nodeRegistrationCost).send();
-        log.info("userId=" + userId + " isNodeEnabled=" + adminContract.nodes(userAddress).send().getValue5());
+        log.info("userId=" + userId + " isNodeEnabled=" + pirlMasternodeDeposit.nodes(userAddress).send().getValue5());
     }
 
     @Override
     public BigInteger getNodeCount() throws Exception {
-        isTrue(contractDeployed(adminContract), "Error deploying contract");
+        isTrue(contractDeployed(pirlMasternodeDeposit), "Error deploying pirlMasternodeDeposit contract");
 
-        return adminContract.nodeCount().send();
+        return pirlMasternodeDeposit.nodeCount().send();
+    }
+
+    @Override
+    public BigInteger getNodeCost() throws Exception {
+        isTrue(contractDeployed(pirlMasternodeDeposit), "Error deploying pirlMasternodeDeposit contract");
+        return pirlMasternodeDeposit.nodeCost().send();
+    }
+
+    @Override
+    public Boolean isNodeRegistrationEnabled() throws Exception {
+        isTrue(contractDeployed(pirlMasternodeDeposit), "Error deploying pirlMasternodeDeposit contract");
+        return pirlMasternodeDeposit.nodeRegistrationEnabled().send();
+    }
+
+    @Override
+    public BigInteger getBalance() throws Exception {
+        isTrue(contractDeployed(pirlMasternodeDeposit), "Error deploying contract");
+        return web3j.ethGetBalance(pirlMasternodeDeposit.getContractAddress(),
+                        DefaultBlockParameterName.LATEST).send().getBalance();
     }
 
 
@@ -64,22 +89,22 @@ public class NodeRegistrationServiceImpl extends AbstractContractService impleme
         String transactionHash = sendRawTransaction(toHexString(signMessage(rawTransaction, admin)));
         String contractAddress = getTransactionReceipt(transactionHash).getContractAddress();
 
-        adminContract = PirlMasternodeDeposit.load(contractAddress, web3j, admin, gasPrice, gasLimit);
-        log.info("contractAddress=" + adminContract.getContractAddress());
-        log.info("adminContract.isValid=" + adminContract.isValid());
-        if (!adminContract.isValid()) {
-            throw new RuntimeException("Contract not valid");
+        pirlMasternodeDeposit = PirlMasternodeDeposit.load(contractAddress, web3j, admin, gasPrice, gasLimit);
+        log.info("pirlMasternodeDeposit=" + pirlMasternodeDeposit.getContractAddress());
+        log.info("pirlMasternodeDeposit.isValid=" + pirlMasternodeDeposit.isValid());
+        if (!pirlMasternodeDeposit.isValid()) {
+            throw new RuntimeException("Contract pirlMasternodeDeposit not valid");
         }
 
-        nodeRegistrationCost = adminContract.nodeCost().send();
-        return adminContract;
+        nodeRegistrationCost = pirlMasternodeDeposit.nodeCost().send();
+        return pirlMasternodeDeposit;
     }
 
     private PirlMasternodeDeposit getContractAuthorizedForUser(int userNumber) throws Exception {
 
         PirlMasternodeDeposit userContract =
                 PirlMasternodeDeposit.load(
-                        contractAddress(adminContract), web3j, userCredentialsManager.getUser(userNumber),
+                        contractAddress(pirlMasternodeDeposit), web3j, userCredentialsManager.getUser(userNumber),
                         gasPrice, gasLimit);
         log.info("userContract.isValid=" + userContract.isValid());
 

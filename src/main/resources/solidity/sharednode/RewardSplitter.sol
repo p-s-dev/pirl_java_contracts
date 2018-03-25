@@ -6,19 +6,21 @@ contract RewardSplitter {
 
     // custom values
     uint constant public NUM_PARTICIPANTS = 4;
-    address constant public PAYER_ADDRESS = address(0x2f3e4F5e079652d9FC9B610d55fd8d864123f9ab);
-    address constant public OPERATOR_ADDRESS = address(0x2f3e4F5e079652d9FC9B610d55fd8d864123f9ab);
-    address constant public MN_DEPOSIT_CONTRACT = address(0x2f3e4F5e079652d9FC9B610d55fd8d864123f9ab);
+    //    address constant public PAYER_ADDRESS = address(0x0);
+    //    address constant public OPERATOR_ADDRESS = address(0x0);
+    //    address constant public MN_DEPOSIT_CONTRACT = address(0x0);
     uint constant public OPERATOR_FEE_PERCENT = 5;
     uint constant public OPERATOR_STARTUP_DAYS = 1 days;
     uint constant public OPERATOR_OFFLINE_FORGIVENESS_DAYS = 1 days;
     uint constant public MIN_PAYMENT = 1 ether;
 
     address[] public investors;
+    address public payerAddress;
+    address public operatorAddress;
     uint public lastPayTimestamp;
     uint public investorDeposit;
 
-    MasternodeRegistrationInterface registrationContract;
+    MasternodeRegistrationInterface public registrationContract;
     uint constant public OPERATOR_FEE = 100 / OPERATOR_FEE_PERCENT;
 
     modifier onlyNonContracts {
@@ -26,8 +28,13 @@ contract RewardSplitter {
         _;
     }
 
-    function RewardSplitter() public {
-        registrationContract = MasternodeRegistrationInterface(MN_DEPOSIT_CONTRACT);
+    function RewardSplitter(
+        address _payerAddress,
+        address _operatorAddress,
+        address _registrationContractAddress) public {
+        payerAddress = _payerAddress;
+        operatorAddress = _operatorAddress;
+        registrationContract = MasternodeRegistrationInterface(_registrationContractAddress);
         investorDeposit = registrationContract.nodeCost() / NUM_PARTICIPANTS;
         lastPayTimestamp = now + OPERATOR_STARTUP_DAYS;
     }
@@ -35,11 +42,11 @@ contract RewardSplitter {
     function() public payable {
         require(investors.length == NUM_PARTICIPANTS);
 
-        if (msg.sender == MN_DEPOSIT_CONTRACT) {
+        if (msg.sender == address(registrationContract)) {
             return;
         }
 
-        require(msg.sender == PAYER_ADDRESS);
+        require(msg.sender == payerAddress);
 
         if (msg.value > MIN_PAYMENT) {
             lastPayTimestamp = block.timestamp;
@@ -51,7 +58,7 @@ contract RewardSplitter {
             investors[i].transfer(share);
         }
 
-        OPERATOR_ADDRESS.transfer(address(this).balance);
+        operatorAddress.transfer(address(this).balance);
     }
 
     function register() public payable onlyNonContracts {
@@ -102,8 +109,8 @@ contract RewardSplitter {
         }
     }
 
-    function getBalance() public constant returns(uint){
-        return address(this).balance;
+    function getInvestorCount() public constant returns(uint){
+        return investors.length;
     }
 
 }
