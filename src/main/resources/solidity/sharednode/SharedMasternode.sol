@@ -87,7 +87,6 @@ contract RewardSplitter is fundinglimited {
 
     function register() public payable onlyNonContracts {
         require(investors.length < 4);
-        //require(msg.value == 5000 ether);
         require(msg.value == investorDeposit);
         investors.push(tx.origin);
         if (investors.length == 4) {
@@ -95,11 +94,6 @@ contract RewardSplitter is fundinglimited {
                 bytes4(keccak256("nodeRegistration()")), 4)) {
                 revert();
             }
-
-            // if (!address(registrationContract).call.value(registrationContract.nodeCost()).gas(200000)(
-            //     bytes4(sha3("nodeRegistration()")), 4)) {
-            //         revert();
-            //     }
         }
     }
 
@@ -119,7 +113,6 @@ contract RewardSplitter is fundinglimited {
         require(_userId >= 0 && _userId < investors.length);
         require(tx.origin == investors[_userId]);
         investors[_userId] = address(0x0);
-        //tx.origin.transfer(5000 ether);
         tx.origin.transfer(investorDeposit);
     }
 
