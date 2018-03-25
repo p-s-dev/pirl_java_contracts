@@ -23,9 +23,6 @@ public class NodeSharingServiceImpl extends AbstractContractService implements N
     private RewardSplitter rewardSplitter;
     private BigInteger depositAmountWei;
     private BigInteger maxInvestors;
-//    private String registrationContractAddress;
-//    private static final String BINARY = RewardSplitter.load(null,null,
-//                    Credentials.create("0"), ZERO, ZERO).getContractBinary();
 
     @Override
     public RewardSplitter getRewardSplitter() throws Exception {
@@ -63,9 +60,8 @@ public class NodeSharingServiceImpl extends AbstractContractService implements N
     @Override
     public void withdrawForUser(int userId) throws Exception {
         isTrue(contractDeployed(rewardSplitter), "Error deploying contract");
-
-        // verify node is registered
-
+        RewardSplitter userContract = getContractAuthorizedForUser(userId);
+        userContract.withdraw().send();
     }
 
     @Override

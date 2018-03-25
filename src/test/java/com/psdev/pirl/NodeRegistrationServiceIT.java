@@ -3,6 +3,7 @@ package com.psdev.pirl;
 import com.psdev.pirl.contracts.generated.RewardSplitter;
 import com.psdev.pirl.masternode.NodeRegistrationService;
 import com.psdev.pirl.masternode.NodeSharingService;
+import com.psdev.pirl.masternode.PayerService;
 import com.psdev.pirl.masternode.UserCredentialsManager;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
@@ -14,7 +15,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.web3j.protocol.Web3j;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
+
+import static org.web3j.utils.Convert.Unit.ETHER;
 
 @Slf4j
 @RunWith(SpringRunner.class)
@@ -33,11 +37,16 @@ public class NodeRegistrationServiceIT {
     @Autowired
     UserCredentialsManager userCredentialsManager;
 
+    @Autowired
+    PayerService payerService;
+
     RewardSplitter rewardSplitterContract;
+    String rewardSplitterContractAddress;
 
     @Before
     public void setUp() throws Exception {
         rewardSplitterContract = sharingService.getRewardSplitter();
+        rewardSplitterContractAddress = rewardSplitterContract.getContractAddress();
     }
 
 //    @Test
@@ -98,6 +107,26 @@ public class NodeRegistrationServiceIT {
                 "Registered user doesn't match shared investor",
                 userCredentialsManager.getUser(3).getAddress(),
                 sharingService.getInvestorAddress(new BigInteger("3")));
+
+        BigInteger userBalBeforePayment = userCredentialsManager.getUserBalance(0);
+        log.info("user balance before payment=" + userBalBeforePayment);
+
+        BigInteger operatorBalBeforePayment = userCredentialsManager.getOperatorBalance();
+        log.info("operator balance before payment=" + operatorBalBeforePayment);
+
+        payerService.pay(rewardSplitterContractAddress, BigDecimal.valueOf(4.0), ETHER);
+        log.info("user balance after  payment=" + userCredentialsManager.getUserBalance(0));
+        log.info("operator balance after  payment=" + userCredentialsManager.getOperatorBalance());
+
+        Assert.assertTrue(
+                "user balance should have changed",
+                !userBalBeforePayment.equals(userCredentialsManager.getUserBalance(0)));
+        Assert.assertTrue(
+                "operator balance should have changed",
+                !userBalBeforePayment.equals(userCredentialsManager.getOperatorBalance()));
+
+        sharingService.withdrawForUser(0);
+
 
     }
 

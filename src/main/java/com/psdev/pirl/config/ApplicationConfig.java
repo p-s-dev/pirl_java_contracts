@@ -24,6 +24,8 @@ public class ApplicationConfig {
     String gasLimit;
     @Value("${default.gas.price}")
     String gasPrice;
+    @Value("${default.payer.gasprovided}")
+    String payerGasProvided;
 
     @Bean
     public Web3j web3j() throws IOException {
@@ -40,6 +42,11 @@ public class ApplicationConfig {
     @Bean
     BigInteger gasLimit() {
         return new BigInteger(gasLimit);
+    }
+
+    @Bean
+    BigInteger payerGasProvided() {
+        return new BigInteger(payerGasProvided);
     }
 
 }

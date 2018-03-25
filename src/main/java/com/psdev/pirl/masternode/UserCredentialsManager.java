@@ -1,13 +1,22 @@
 package com.psdev.pirl.masternode;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.web3j.crypto.Credentials;
+import org.web3j.protocol.Web3j;
 
+import java.io.IOException;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.web3j.protocol.core.DefaultBlockParameterName.LATEST;
+
 @Service
 public class UserCredentialsManager {
+
+    @Autowired
+    Web3j web3j;
 
     private Credentials testrpc0 = Credentials.create("4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d");
     private Credentials testrpc1 = Credentials.create("6cbed15c793ce57650b9877cf6fa156fbef513c4e6134f022a85b1ffdd59b2a1");
@@ -48,6 +57,17 @@ public class UserCredentialsManager {
             throw new RuntimeException("no such user");
         }
         return users.get(userNumber).getAddress();
+    }
+
+    public BigInteger getUserBalance(int userNumber) throws IOException {
+        if (userNumber > users.size()) {
+            throw new RuntimeException("no such user");
+        }
+        return web3j.ethGetBalance(getUserAddress(userNumber), LATEST).send().getBalance();
+    }
+
+    public BigInteger getOperatorBalance() throws IOException {
+        return web3j.ethGetBalance(getOperator().getAddress(), LATEST).send().getBalance();
     }
 
 }
