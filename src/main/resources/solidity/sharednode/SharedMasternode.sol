@@ -22,7 +22,11 @@ contract RewardSplitter {
     uint constant public NUM_PARTICIPANTS = 4;
     address constant public PAYER_ADDRESS = address(0x2f3e4F5e079652d9FC9B610d55fd8d864123f9ab);
     address constant public OPERATOR_ADDRESS = address(0x2f3e4F5e079652d9FC9B610d55fd8d864123f9ab);
+    address constant public MN_DEPOSIT_CONTRACT = address(0x2f3e4F5e079652d9FC9B610d55fd8d864123f9ab);
     uint constant public OPERATOR_FEE_PERCENT = 5;
+    uint constant public OPERATOR_STARTUP_DAYS = 1 days;
+    uint constant public OPERATOR_OFFLINE_FORGIVENESS_DAYS = 1 days;
+    uint constant public MIN_PAYMENT = 1 ether;
 
     address[] public investors;
     uint public lastPayTimestamp;
@@ -36,27 +40,27 @@ contract RewardSplitter {
         _;
     }
 
-    function RewardSplitter(address _registrationContractAddr) public {
+    function RewardSplitter() public {
         registrationContract =
-        MockMasternodeRegistrationContract(_registrationContractAddr);
+        MockMasternodeRegistrationContract(MN_DEPOSIT_CONTRACT);
         investorDeposit = registrationContract.nodeCost() / NUM_PARTICIPANTS;
-        lastPayTimestamp = now - 1 days;
+        lastPayTimestamp = now + OPERATOR_STARTUP_DAYS;
     }
 
     function() public payable {
         require(investors.length == NUM_PARTICIPANTS);
 
-        if (msg.sender == address(registrationContract)) {
+        if (msg.sender == MN_DEPOSIT_CONTRACT) {
             return;
         }
 
         require(msg.sender == PAYER_ADDRESS);
 
-        uint share = (msg.value - (msg.value / OPERATOR_FEE)) / NUM_PARTICIPANTS;
-
-        if (share > 0.5 ether) {
+        if (msg.value > MIN_PAYMENT) {
             lastPayTimestamp = block.timestamp;
         }
+
+        uint share = (msg.value - (msg.value / OPERATOR_FEE)) / NUM_PARTICIPANTS;
 
         for (uint256 i = 0; i < NUM_PARTICIPANTS; i++) {
             investors[i].transfer(share);
@@ -84,7 +88,7 @@ contract RewardSplitter {
         require(tx.origin == investors[userId]);
 
         if (investors.length == NUM_PARTICIPANTS &&
-        now - 1 days > lastPayTimestamp) {
+        now - OPERATOR_OFFLINE_FORGIVENESS_DAYS > lastPayTimestamp) {
             registrationContract.disableNode();
             registrationContract.withdrawStake();
         }
@@ -105,7 +109,8 @@ contract RewardSplitter {
     }
 
     function canCancelInactiveNode() public constant returns(bool) {
-        if (investors.length == NUM_PARTICIPANTS && now - 1 days > lastPayTimestamp) {
+        if (investors.length == NUM_PARTICIPANTS &&
+        now - OPERATOR_OFFLINE_FORGIVENESS_DAYS > lastPayTimestamp) {
             return true;
         } else {
             return false;
@@ -117,4 +122,3 @@ contract RewardSplitter {
     }
 
 }
-
