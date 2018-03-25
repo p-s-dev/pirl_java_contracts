@@ -2,45 +2,23 @@ package com.psdev.pirl.masternode;
 
 import com.psdev.pirl.contracts.generated.PirlMasternodeDeposit;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.RawTransaction;
-import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.Response;
-import org.web3j.protocol.core.methods.response.EthGetTransactionCount;
-import org.web3j.protocol.core.methods.response.EthGetTransactionReceipt;
-import org.web3j.protocol.core.methods.response.EthSendTransaction;
-import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.web3j.tx.Contract;
 
-import java.io.IOException;
 import java.math.BigInteger;
-import java.util.concurrent.ExecutionException;
 
 import static java.math.BigInteger.ZERO;
 import static org.springframework.util.Assert.isTrue;
-import static org.springframework.util.StringUtils.isEmpty;
 import static org.web3j.crypto.RawTransaction.createContractTransaction;
 import static org.web3j.crypto.TransactionEncoder.signMessage;
-import static org.web3j.protocol.core.DefaultBlockParameterName.LATEST;
 import static org.web3j.utils.Numeric.toHexString;
 
 @Slf4j
 @Service
-public class NodeRegistrationServiceImpl implements NodeRegistrationService {
-
-    @Autowired
-    Web3j web3j;
-
-    @Autowired
-    UserCredentialsManager userCredentialsManager;
-
-    @Autowired
-    BigInteger gasPrice;
-
-    @Autowired
-    BigInteger gasLimit;
+public class NodeRegistrationServiceImpl extends AbstractContractService implements NodeRegistrationService {
 
     @Value("${contract.bin.masternode.deploy.smalldeposit}")
     String contractBin;
@@ -50,7 +28,7 @@ public class NodeRegistrationServiceImpl implements NodeRegistrationService {
 
     @Override
     public void enableNodeRegistration() throws Exception {
-        isTrue(contractDeployed(), "Error deploying contract");
+        isTrue(contractDeployed(adminContract), "Error deploying contract");
 
         log.info("isRegistrationEnabled=" + adminContract.nodeRegistrationEnabled().send());
         adminContract.enableNodeRegistration().send();
@@ -60,7 +38,7 @@ public class NodeRegistrationServiceImpl implements NodeRegistrationService {
 
     @Override
     public void registerNodeForUser(int userId) throws Exception {
-        isTrue(contractDeployed(), "Error deploying contract");
+        isTrue(contractDeployed(adminContract), "Error deploying contract");
 
         String userAddress = userCredentialsManager.getUserAddress(userId);
 
@@ -71,13 +49,13 @@ public class NodeRegistrationServiceImpl implements NodeRegistrationService {
 
     @Override
     public BigInteger getNodeCount() throws Exception {
-        isTrue(contractDeployed(), "Error deploying contract");
+        isTrue(contractDeployed(adminContract), "Error deploying contract");
 
         return adminContract.nodeCount().send();
     }
 
 
-    private PirlMasternodeDeposit deployContract() throws Exception {
+    protected Contract deployContract() throws Exception {
 
         Credentials admin = userCredentialsManager.getAdmin();
 
@@ -94,72 +72,18 @@ public class NodeRegistrationServiceImpl implements NodeRegistrationService {
         }
 
         nodeRegistrationCost = adminContract.nodeCost().send();
-
         return adminContract;
     }
 
     private PirlMasternodeDeposit getContractAuthorizedForUser(int userNumber) throws Exception {
 
         PirlMasternodeDeposit userContract =
-                PirlMasternodeDeposit.load(contractAddress(), web3j, userCredentialsManager.getUser(userNumber), gasPrice, gasLimit);
+                PirlMasternodeDeposit.load(
+                        contractAddress(adminContract), web3j, userCredentialsManager.getUser(userNumber),
+                        gasPrice, gasLimit);
         log.info("userContract.isValid=" + userContract.isValid());
 
         return userContract;
     }
-
-
-    private BigInteger getNonce(String address) throws ExecutionException, InterruptedException {
-        String adminAddress = userCredentialsManager.getAdmin().getAddress();
-
-        EthGetTransactionCount ethGetTransactionCount =
-                web3j.ethGetTransactionCount(adminAddress, LATEST).sendAsync().get();
-
-        BigInteger nonce = ethGetTransactionCount.getTransactionCount();
-        log.info("Address=" + address + " Nonce=" + nonce);
-        return nonce;
-    }
-
-    private String sendRawTransaction(String hexValue) throws ExecutionException, InterruptedException {
-        EthSendTransaction ethSendTransaction = web3j.ethSendRawTransaction(hexValue).sendAsync().get();
-
-        if (ethSendTransaction.hasError()) {
-            Response.Error e = ethSendTransaction.getError();
-            log.error(e.getMessage() + "\n" + e.getData());
-            throw new RuntimeException("Error when creating contract");
-        }
-
-        return ethSendTransaction.getTransactionHash();
-    }
-
-    private TransactionReceipt getTransactionReceipt(String transactionHash) throws IOException {
-
-        EthGetTransactionReceipt ethGetReceipt = web3j.ethGetTransactionReceipt(transactionHash).send();
-
-        if (ethGetReceipt.hasError()) {
-            Response.Error e = ethGetReceipt.getError();
-            log.error(e.getMessage() + "\n" + e.getData());
-            throw new RuntimeException("Error when getting transaction receipt");
-        }
-
-        if (ethGetReceipt.getTransactionReceipt().isPresent()) {
-            return ethGetReceipt.getTransactionReceipt().get();
-        } else {
-            throw new RuntimeException("transaction receipt not available after sync call");
-        }
-
-    }
-
-    private boolean contractDeployed() throws Exception {
-        if (adminContract == null || isEmpty(contractAddress())) {
-            deployContract();
-        }
-
-        return adminContract != null && !isEmpty(contractAddress());
-    }
-
-    private String contractAddress() {
-        return adminContract.getContractAddress();
-    }
-
 
 }
