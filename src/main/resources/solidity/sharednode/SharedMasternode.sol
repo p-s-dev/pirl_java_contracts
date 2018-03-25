@@ -43,10 +43,6 @@ contract fundinglimited is owned {
 
     modifier onlyNonContracts {
         require(msg.sender == tx.origin);
-        // uint size;
-        // address addr = msg.sender;
-        // assembly { size := extcodesize(addr) }
-        // require(size == 0);
         _;
     }
 
