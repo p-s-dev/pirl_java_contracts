@@ -24,35 +24,36 @@ contract owned {
         require(msg.sender == owner);
         _;
     }
-}
-
-contract fundinglimited is owned {
-    function fundinglimited() public {
-        payer = address(0xdd870fa1b7c4700f2bd7f44238821c26f7392148);
-    }
-    address payer;
-
-    function changepayer(address _newpayer) public onlyOwner {
-        payer = _newpayer;
-    }
-
-    modifier onlyPayer {
-        require(msg.sender == payer);
-        _;
-    }
 
     modifier onlyNonContracts {
         require(msg.sender == tx.origin);
         _;
     }
-
 }
 
-contract RewardSplitter is fundinglimited {
+// contract fundinglimited is owned {
+//     function fundinglimited() public {
+//         payer = address(0x2f3e4F5e079652d9FC9B610d55fd8d864123f9ab);
+//     }
+//     address payer;
+//     function changepayer(address _newpayer) public onlyOwner {
+//         payer = _newpayer;
+//     }
+//     modifier onlyPayerOrMnDeposit {
+//         require(msg.sender == payer || msg.sender == payer);
+//         _;
+//     }
+//     modifier onlyNonContracts {
+//         require(msg.sender == tx.origin);
+//         _;
+//     }
+// }
+
+contract RewardSplitter is owned {
 
     address[] public investors;
-
-    uint public lastPayBlock;
+    address payer;
+    uint public lastPayTimestamp;
     uint256 public investorDeposit;
     bool public masternodeCancelled = false;
 
@@ -61,17 +62,24 @@ contract RewardSplitter is fundinglimited {
     function RewardSplitter(address _registrationContractAddr) public {
         registrationContract = MockMasternodeRegistrationContract(_registrationContractAddr);
         investorDeposit = registrationContract.nodeCost() / 4;
-        lastPayBlock = now - 1 days;
+        lastPayTimestamp = now - 1 days;
+        payer = address(0x2f3e4F5e079652d9FC9B610d55fd8d864123f9ab);
     }
 
-    function() public payable onlyPayer {
+    function() public payable {
         require(investors.length == 4);
 
-        // uint share = (msg.value - 0.1 ether) / 3;           // fixed fee
-        uint share = (msg.value - (msg.value / 20)) / 3;    // 5% fee to operator
+        if (msg.sender == address(registrationContract)) {
+            return;
+        }
+
+        require(msg.sender == payer);
+
+        // 5% fee to operator
+        uint share = (msg.value - (msg.value / 20)) / 4;
 
         if (share > 0.5 ether) {
-            lastPayBlock = block.timestamp;
+            lastPayTimestamp = block.timestamp;
         }
 
         investors[0].transfer(share);
@@ -86,50 +94,53 @@ contract RewardSplitter is fundinglimited {
         require(msg.value == investorDeposit);
         investors.push(tx.origin);
         if (investors.length == 4) {
-            if (!address(registrationContract).call.value(registrationContract.nodeCost()).gas(200000)(
+            if (!address(registrationContract).call.value(
+                registrationContract.nodeCost()).gas(200000)(
                 bytes4(keccak256("nodeRegistration()")), 4)) {
                 revert();
             }
         }
     }
 
-    function cancelInactiveNode(uint256 _userId) public {
-        require(masternodeCancelled == false);
-        require(_userId >= 0 && _userId < investors.length);
-        require(tx.origin == investors[_userId]);
-        if (now - 1 days > lastPayBlock) {
-            masternodeCancelled = true;
+    function withdraw() public onlyNonContracts {
+        require(investors.length > 0);
+        uint256 userId = getInvestorId(tx.origin);
+        require(tx.origin == investors[userId]);
+
+        if (investors.length == 4 && now - 1 days > lastPayTimestamp) {
             registrationContract.disableNode();
             registrationContract.withdrawStake();
         }
-    }
 
-    function withdraw(uint256 _userId) public onlyNonContracts {
-        require(masternodeCancelled == true || investors.length < 4);
-        require(_userId >= 0 && _userId < investors.length);
-        require(tx.origin == investors[_userId]);
-        investors[_userId] = address(0x0);
+        investors[userId] = investors[investors.length-1];
+        delete investors[investors.length-1];
+        investors.length--;
         tx.origin.transfer(investorDeposit);
     }
 
-    function getBalance() public constant returns(uint){
-        return address(this).balance;
+    function changepayer(address _newpayer) public onlyOwner {
+        payer = _newpayer;
     }
 
-    function canCancelInactiveNode() public constant returns(bool){
-        if (masternodeCancelled == false && now - 1 days > lastPayBlock) {
+    function getInvestorId(address _investorAddress) private constant returns(uint256) {
+        for (uint256 i = 0; i < investors.length; i++){
+            if (investors[i] == _investorAddress) {
+                return i;
+            }
+        }
+        return 4;
+    }
+
+    function canCancelInactiveNode() public constant returns(bool) {
+        if (masternodeCancelled == false && now - 1 days > lastPayTimestamp) {
             return true;
         } else {
             return false;
         }
     }
 
-    function getInvestorAddress(uint256 _userId) public constant returns(address){
-        if (_userId >= 0 && _userId < investors.length) {
-            return address(0x0);
-        } else {
-            return investors[_userId];
-        }
+    function getBalance() public constant returns(uint){
+        return address(this).balance;
     }
 
 }
