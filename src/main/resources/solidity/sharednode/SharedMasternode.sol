@@ -16,66 +16,60 @@ contract MockMasternodeRegistrationContract {
     }
 }
 
-contract owned {
-    function owned() public { owner = msg.sender; }
-    address owner;
+contract RewardSplitter {
 
-    modifier onlyOwner {
-        require(msg.sender == owner);
-        _;
-    }
+    // custom values
+    uint constant public NUM_PARTICIPANTS = 4;
+    address constant public PAYER_ADDRESS = address(0x2f3e4F5e079652d9FC9B610d55fd8d864123f9ab);
+    address constant public OPERATOR_ADDRESS = address(0x2f3e4F5e079652d9FC9B610d55fd8d864123f9ab);
+    uint constant public OPERATOR_FEE_PERCENT = 5;
+
+    address[] public investors;
+    uint public lastPayTimestamp;
+    uint public investorDeposit;
+
+    MockMasternodeRegistrationContract registrationContract;
+    uint constant public OPERATOR_FEE = 100 / OPERATOR_FEE_PERCENT;
 
     modifier onlyNonContracts {
         require(msg.sender == tx.origin);
         _;
     }
-}
-
-contract RewardSplitter is owned {
-
-    address[] public investors;
-    address payer;
-    uint public lastPayTimestamp;
-    uint256 public investorDeposit;
-    bool public masternodeCancelled = false;
-
-    MockMasternodeRegistrationContract registrationContract;
 
     function RewardSplitter(address _registrationContractAddr) public {
-        registrationContract = MockMasternodeRegistrationContract(_registrationContractAddr);
-        investorDeposit = registrationContract.nodeCost() / 4;
+        registrationContract =
+        MockMasternodeRegistrationContract(_registrationContractAddr);
+        investorDeposit = registrationContract.nodeCost() / NUM_PARTICIPANTS;
         lastPayTimestamp = now - 1 days;
-        payer = address(0x2f3e4F5e079652d9FC9B610d55fd8d864123f9ab);
     }
 
     function() public payable {
-        require(investors.length == 4);
+        require(investors.length == NUM_PARTICIPANTS);
 
         if (msg.sender == address(registrationContract)) {
             return;
         }
 
-        require(msg.sender == payer);
+        require(msg.sender == PAYER_ADDRESS);
 
-        // 5% fee to operator
-        uint share = (msg.value - (msg.value / 20)) / 4;
+        uint share = (msg.value - (msg.value / OPERATOR_FEE)) / NUM_PARTICIPANTS;
 
         if (share > 0.5 ether) {
             lastPayTimestamp = block.timestamp;
         }
 
-        investors[0].transfer(share);
-        investors[1].transfer(share);
-        investors[2].transfer(share);
-        investors[3].transfer(share);
-        owner.transfer(address(this).balance);
+        for (uint256 i = 0; i < NUM_PARTICIPANTS; i++) {
+            investors[i].transfer(share);
+        }
+
+        OPERATOR_ADDRESS.transfer(address(this).balance);
     }
 
     function register() public payable onlyNonContracts {
-        require(investors.length < 4);
+        require(investors.length < NUM_PARTICIPANTS);
         require(msg.value == investorDeposit);
         investors.push(tx.origin);
-        if (investors.length == 4) {
+        if (investors.length == NUM_PARTICIPANTS) {
             if (!address(registrationContract).call.value(
                 registrationContract.nodeCost()).gas(200000)(
                 bytes4(keccak256("nodeRegistration()")), 4)) {
@@ -89,7 +83,8 @@ contract RewardSplitter is owned {
         uint256 userId = getInvestorId(tx.origin);
         require(tx.origin == investors[userId]);
 
-        if (investors.length == 4 && now - 1 days > lastPayTimestamp) {
+        if (investors.length == NUM_PARTICIPANTS &&
+        now - 1 days > lastPayTimestamp) {
             registrationContract.disableNode();
             registrationContract.withdrawStake();
         }
@@ -100,21 +95,17 @@ contract RewardSplitter is owned {
         tx.origin.transfer(investorDeposit);
     }
 
-    function changepayer(address _newpayer) public onlyOwner {
-        payer = _newpayer;
-    }
-
     function getInvestorId(address _investorAddress) private constant returns(uint256) {
         for (uint256 i = 0; i < investors.length; i++){
             if (investors[i] == _investorAddress) {
                 return i;
             }
         }
-        return 4;
+        return NUM_PARTICIPANTS;
     }
 
     function canCancelInactiveNode() public constant returns(bool) {
-        if (masternodeCancelled == false && now - 1 days > lastPayTimestamp) {
+        if (investors.length == NUM_PARTICIPANTS && now - 1 days > lastPayTimestamp) {
             return true;
         } else {
             return false;
