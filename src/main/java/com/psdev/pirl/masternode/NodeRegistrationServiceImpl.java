@@ -1,6 +1,6 @@
 package com.psdev.pirl.masternode;
 
-import com.psdev.pirl.contracts.generated.Deposit;
+import com.psdev.pirl.contracts.generated.PirlMasternodeDeposit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,7 +45,7 @@ public class NodeRegistrationServiceImpl implements NodeRegistrationService {
     @Value("${contract.bin.masternode.deploy.smalldeposit}")
     String contractBin;
 
-    private Deposit adminContract;
+    private PirlMasternodeDeposit adminContract;
     private BigInteger nodeRegistrationCost;
 
     @Override
@@ -77,7 +77,7 @@ public class NodeRegistrationServiceImpl implements NodeRegistrationService {
     }
 
 
-    private Deposit deployContract() throws Exception {
+    private PirlMasternodeDeposit deployContract() throws Exception {
 
         Credentials admin = userCredentialsManager.getAdmin();
 
@@ -86,7 +86,7 @@ public class NodeRegistrationServiceImpl implements NodeRegistrationService {
         String transactionHash = sendRawTransaction(toHexString(signMessage(rawTransaction, admin)));
         String contractAddress = getTransactionReceipt(transactionHash).getContractAddress();
 
-        adminContract = Deposit.load(contractAddress, web3j, admin, gasPrice, gasLimit);
+        adminContract = PirlMasternodeDeposit.load(contractAddress, web3j, admin, gasPrice, gasLimit);
         log.info("contractAddress=" + adminContract.getContractAddress());
         log.info("adminContract.isValid=" + adminContract.isValid());
         if (!adminContract.isValid()) {
@@ -98,10 +98,10 @@ public class NodeRegistrationServiceImpl implements NodeRegistrationService {
         return adminContract;
     }
 
-    private Deposit getContractAuthorizedForUser(int userNumber) throws Exception {
+    private PirlMasternodeDeposit getContractAuthorizedForUser(int userNumber) throws Exception {
 
-        Deposit userContract =
-                Deposit.load(contractAddress(), web3j, userCredentialsManager.getUser(userNumber), gasPrice, gasLimit);
+        PirlMasternodeDeposit userContract =
+                PirlMasternodeDeposit.load(contractAddress(), web3j, userCredentialsManager.getUser(userNumber), gasPrice, gasLimit);
         log.info("userContract.isValid=" + userContract.isValid());
 
         return userContract;
