@@ -1,14 +1,7 @@
-// contract MasternodeRegistrationContract {
-//     function nodeRegistration() public payable;
-//     function disableNode() public;
-//     function withdrawStake() public;
-//     function getNodeEnabledStatus() public constant returns(bool);
-//     function nodeCost() public constant returns(uint256);
-// }
+pragma solidity ^0.4.2;
 
 contract MockMasternodeRegistrationContract {
     bool nodeEnabled = false;
-
     function nodeRegistration() public payable {
     }
     function disableNode() public { }
@@ -19,11 +12,9 @@ contract MockMasternodeRegistrationContract {
         return 2 ether;
     }
     function getBalance() public constant returns(uint){
-        return this.balance;
+        return address(this).balance;
     }
-
 }
-
 
 contract owned {
     function owned() public { owner = msg.sender; }
@@ -71,7 +62,7 @@ contract RewardSplitter is fundinglimited {
 
     MockMasternodeRegistrationContract registrationContract;
 
-    function RewardSplitter(address _registrationContractAddr) {
+    function RewardSplitter(address _registrationContractAddr) public {
         registrationContract = MockMasternodeRegistrationContract(_registrationContractAddr);
         investorDeposit = registrationContract.nodeCost() / 4;
         lastPayBlock = now - 1 days;
@@ -91,7 +82,7 @@ contract RewardSplitter is fundinglimited {
         investors[1].transfer(share);
         investors[2].transfer(share);
         investors[3].transfer(share);
-        owner.transfer(this.balance);
+        owner.transfer(address(this).balance);
     }
 
     function register() public payable onlyNonContracts {
@@ -99,24 +90,17 @@ contract RewardSplitter is fundinglimited {
         //require(msg.value == 5000 ether);
         require(msg.value == investorDeposit);
         investors.push(tx.origin);
-        // if (investors.length == 4) {
-        //     registrationContract.nodeRegistration.value(
-        //         registrationContract.nodeCost());
-        // }
-    }
+        if (investors.length == 4) {
+            if (!address(registrationContract).call.value(registrationContract.nodeCost()).gas(200000)(
+                bytes4(keccak256("nodeRegistration()")), 4)) {
+                revert();
+            }
 
-    function startNode() public {
-        // uint256 nodeCost = 500000000000000000;
-        // //registrationContract.nodeRegistration.value(nodeCost)();
-        registrationContract.call.value(5000000000000).gas(20764)( bytes4(sha3("nodeRegistration()")), 4);
-        // registrationContract.call.gas(20764)( bytes4(sha3("nodeRegistration()")), 4);
-        // //registrationContract.call.value(nodeCost)(bytes4(sha3("nodeRegistration()")));
-        //registrationContract.nodeRegistration.value(500000000000000000)();
-
-        // if (investors.length == 4) {
-        //     uint256 nodeCost = registrationContract.nodeCost();
-        //     registrationContract.call.value(nodeCost)(bytes4(sha3("nodeRegistration()")));
-        // }
+            // if (!address(registrationContract).call.value(registrationContract.nodeCost()).gas(200000)(
+            //     bytes4(sha3("nodeRegistration()")), 4)) {
+            //         revert();
+            //     }
+        }
     }
 
     function cancelInactiveNode(uint256 _userId) public {
@@ -140,7 +124,23 @@ contract RewardSplitter is fundinglimited {
     }
 
     function getBalance() public constant returns(uint){
-        return this.balance;
+        return address(this).balance;
+    }
+
+    function canCancelInactiveNode() public constant returns(bool){
+        if (masternodeCancelled == false && now - 1 days > lastPayBlock) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function getInvestorAddress(uint256 _userId) public constant returns(address){
+        if (_userId >= 0 && _userId < investors.length) {
+            return address(0x0);
+        } else {
+            return investors[_userId];
+        }
     }
 
 }
