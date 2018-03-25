@@ -1,20 +1,6 @@
 pragma solidity ^0.4.2;
 
-contract MockMasternodeRegistrationContract {
-    bool nodeEnabled = false;
-    function nodeRegistration() public payable {
-    }
-    function disableNode() public { }
-    function withdrawStake() public {
-        msg.sender.transfer(2 ether);
-    }
-    function nodeCost() public constant returns(uint256) {
-        return 2 ether;
-    }
-    function getBalance() public constant returns(uint){
-        return address(this).balance;
-    }
-}
+import "./MasternodeRegistrationInterface.sol";
 
 contract RewardSplitter {
 
@@ -32,7 +18,7 @@ contract RewardSplitter {
     uint public lastPayTimestamp;
     uint public investorDeposit;
 
-    MockMasternodeRegistrationContract registrationContract;
+    MasternodeRegistrationInterface registrationContract;
     uint constant public OPERATOR_FEE = 100 / OPERATOR_FEE_PERCENT;
 
     modifier onlyNonContracts {
@@ -41,8 +27,7 @@ contract RewardSplitter {
     }
 
     function RewardSplitter() public {
-        registrationContract =
-        MockMasternodeRegistrationContract(MN_DEPOSIT_CONTRACT);
+        registrationContract = MasternodeRegistrationInterface(MN_DEPOSIT_CONTRACT);
         investorDeposit = registrationContract.nodeCost() / NUM_PARTICIPANTS;
         lastPayTimestamp = now + OPERATOR_STARTUP_DAYS;
     }

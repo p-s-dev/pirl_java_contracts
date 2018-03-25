@@ -6,12 +6,13 @@ set -o pipefail
 baseDir="../src/main/resources/solidity"
 
 generateTargets="
-deposit/deposit
+masternode/PirlMasternodeDeposit
 "
 
 compileGenerateTargets="
 withdraw/DepositProxy
-sharednode/SharedMasternode
+sharednode/RewardSplitter
+sharednode/MockMasternodeRegistrationContract
 "
 
 
@@ -22,8 +23,8 @@ for target in ${generateTargets}; do
     cd $baseDir
     echo "Generating contract bindings"
     web3j solidity generate \
-        ${dirName}/build/${fileName}.bin \
-        ${dirName}/build/${fileName}.abi \
+        ${dirName}/${fileName}.bin \
+        ${dirName}/${fileName}.abi \
         -p com.psdev.pirl.contracts.generated \
         -o ../../java/ > /dev/null
 
