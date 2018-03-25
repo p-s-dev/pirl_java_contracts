@@ -31,24 +31,6 @@ contract owned {
     }
 }
 
-// contract fundinglimited is owned {
-//     function fundinglimited() public {
-//         payer = address(0x2f3e4F5e079652d9FC9B610d55fd8d864123f9ab);
-//     }
-//     address payer;
-//     function changepayer(address _newpayer) public onlyOwner {
-//         payer = _newpayer;
-//     }
-//     modifier onlyPayerOrMnDeposit {
-//         require(msg.sender == payer || msg.sender == payer);
-//         _;
-//     }
-//     modifier onlyNonContracts {
-//         require(msg.sender == tx.origin);
-//         _;
-//     }
-// }
-
 contract RewardSplitter is owned {
 
     address[] public investors;
