@@ -2,10 +2,10 @@ package com.psdev.pirl.masternode;
 
 import com.psdev.pirl.contracts.generated.PirlMasternodeDeposit;
 import com.psdev.pirl.contracts.generated.RewardSplitter;
+import com.psdev.pirl.masternode.loader.ContractLoader;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.web3j.crypto.Credentials;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.tx.Contract;
 
@@ -19,6 +19,9 @@ public class NodeSharingServiceImpl extends AbstractContractService implements N
 
     @Autowired
     NodeRegistrationService nodeRegistrationService;
+
+    @Autowired
+    ContractLoader contractLoader;
 
     private RewardSplitter rewardSplitter;
     private BigInteger depositAmountWei;
@@ -80,17 +83,8 @@ public class NodeSharingServiceImpl extends AbstractContractService implements N
 
     protected Contract deployContract() throws Exception {
 
-        Credentials admin = userCredentialsManager.getAdmin();
         PirlMasternodeDeposit pirlMasternodeDeposit = nodeRegistrationService.enableNodeRegistration();
-
-        rewardSplitter = RewardSplitter.deploy(
-                web3j,
-                admin,
-                gasPrice,
-                gasLimit,
-                userCredentialsManager.getPayer().getAddress(),
-                userCredentialsManager.getOperator().getAddress(),
-                pirlMasternodeDeposit.getContractAddress()).send();
+        rewardSplitter = contractLoader.loadRewardSplitterContract(pirlMasternodeDeposit.getContractAddress());
 
         // TODO more verifications of correct initialization
 

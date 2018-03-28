@@ -1,31 +1,35 @@
 package com.psdev.pirl.masternode;
 
 import com.psdev.pirl.contracts.generated.PirlMasternodeDeposit;
+import com.psdev.pirl.masternode.events.NodeRegistrationListener;
+import com.psdev.pirl.masternode.loader.ContractLoader;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.web3j.crypto.Credentials;
-import org.web3j.crypto.RawTransaction;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.tx.Contract;
 
 import java.math.BigInteger;
 
-import static java.math.BigInteger.ZERO;
 import static org.springframework.util.Assert.isTrue;
-import static org.web3j.crypto.RawTransaction.createContractTransaction;
-import static org.web3j.crypto.TransactionEncoder.signMessage;
-import static org.web3j.utils.Numeric.toHexString;
 
 @Slf4j
 @Service
 public class NodeRegistrationServiceImpl extends AbstractContractService implements NodeRegistrationService {
 
-    @Value("${contract.bin.masternode.deploy.smalldeposit}")
-    String contractBin;
+    @Autowired
+    ContractLoader contractLoader;
+
+    @Autowired
+    NodeRegistrationListener eventListener;
 
     private PirlMasternodeDeposit pirlMasternodeDeposit;
     private BigInteger nodeRegistrationCost;
+
+//    @EventListener
+//    public void onApplicationEvent(ContextRefreshedEvent event) throws Exception {
+//        enableNodeRegistration();
+//    }
 
     @Override
     public PirlMasternodeDeposit enableNodeRegistration() throws Exception {
@@ -79,17 +83,16 @@ public class NodeRegistrationServiceImpl extends AbstractContractService impleme
                         DefaultBlockParameterName.LATEST).send().getBalance();
     }
 
+    @Override
+    public void startEventListener() throws Exception {
+//        eventListener.start();
+
+    }
+
 
     protected Contract deployContract() throws Exception {
+        pirlMasternodeDeposit = contractLoader.loadPirlMasternodeDeposit();
 
-        Credentials admin = userCredentialsManager.getAdmin();
-
-        BigInteger nonce = getNonce(admin.getAddress());
-        RawTransaction rawTransaction = createContractTransaction(nonce, gasPrice, gasLimit, ZERO, contractBin);
-        String transactionHash = sendRawTransaction(toHexString(signMessage(rawTransaction, admin)));
-        String contractAddress = getTransactionReceipt(transactionHash).getContractAddress();
-
-        pirlMasternodeDeposit = PirlMasternodeDeposit.load(contractAddress, web3j, admin, gasPrice, gasLimit);
         log.info("pirlMasternodeDeposit=" + pirlMasternodeDeposit.getContractAddress());
         log.info("pirlMasternodeDeposit.isValid=" + pirlMasternodeDeposit.isValid());
         if (!pirlMasternodeDeposit.isValid()) {
@@ -97,6 +100,7 @@ public class NodeRegistrationServiceImpl extends AbstractContractService impleme
         }
 
         nodeRegistrationCost = pirlMasternodeDeposit.nodeCost().send();
+        startEventListener();
         return pirlMasternodeDeposit;
     }
 

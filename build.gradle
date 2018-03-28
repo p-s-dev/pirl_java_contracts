@@ -26,6 +26,8 @@ dependencies {
             "ch.qos.logback:logback-classic:$logbackVersion"
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: '2.0.0.RELEASE'
     compile "org.projectlombok:lombok:1.16.20"
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.0'
+    compile group: 'com.google.guava', name: 'guava', version: '24.1-jre'
 
     testCompile("junit:junit")
     testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: '2.0.0.RELEASE'

@@ -1,6 +1,8 @@
-package com.psdev.pirl.masternode;
+package com.psdev.pirl.masternode.loader.testrpc;
 
+import com.psdev.pirl.masternode.loader.UserCredentialsManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
@@ -13,7 +15,8 @@ import java.util.List;
 import static org.web3j.protocol.core.DefaultBlockParameterName.LATEST;
 
 @Service
-public class UserCredentialsManager {
+@Profile("dev")
+public class TestRpcUserCredentialsManagerImpl implements UserCredentialsManager {
 
     @Autowired
     Web3j web3j;
@@ -31,43 +34,56 @@ public class UserCredentialsManager {
 
     private List<Credentials> users;
 
-    UserCredentialsManager() {
+    TestRpcUserCredentialsManagerImpl() {
         users = Arrays.asList(testrpc1,testrpc2,testrpc3,testrpc4,testrpc5,testrpc6,testrpc7);
     }
 
+    @Override
     public Credentials getAdmin() {
         return testrpc0;
     }
+    @Override
     public Credentials getPayer() {
         return testrpc9;
     }
+
+    @Override
+    public String getPayerAddress() {
+        return getPayer().getAddress();
+    }
+
+    @Override
     public Credentials getOperator() {
         return testrpc8;
     }
 
+    @Override
     public Credentials getUser(int userNumber) {
-        if (userNumber > users.size()) {
-            throw new RuntimeException("no such user");
-        }
+        validate(userNumber);
         return users.get(userNumber);
     }
 
+    @Override
     public String getUserAddress(int userNumber) {
-        if (userNumber > users.size()) {
-            throw new RuntimeException("no such user");
-        }
+        validate(userNumber);
         return users.get(userNumber).getAddress();
     }
 
+    @Override
     public BigInteger getUserBalance(int userNumber) throws IOException {
-        if (userNumber > users.size()) {
-            throw new RuntimeException("no such user");
-        }
+        validate(userNumber);
         return web3j.ethGetBalance(getUserAddress(userNumber), LATEST).send().getBalance();
     }
 
+    @Override
     public BigInteger getOperatorBalance() throws IOException {
         return web3j.ethGetBalance(getOperator().getAddress(), LATEST).send().getBalance();
+    }
+
+    private void validate(int userNumber) {
+        if (userNumber >= users.size()) {
+            throw new RuntimeException("no such user");
+        }
     }
 
 }

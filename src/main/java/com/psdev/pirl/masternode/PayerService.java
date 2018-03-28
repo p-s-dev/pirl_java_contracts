@@ -1,17 +1,19 @@
 package com.psdev.pirl.masternode;
 
+import com.psdev.pirl.masternode.loader.UserCredentialsManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.web3j.protocol.Web3j;
 import org.web3j.tx.RawTransactionManager;
 import org.web3j.tx.Transfer;
 import org.web3j.utils.Convert;
 
-import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
 @Service
+@Profile({"dev", "ropsten"})
 public class PayerService {
 
     @Autowired
@@ -28,7 +30,7 @@ public class PayerService {
 
     private Transfer transfer;
 
-    @PostConstruct
+//    @PostConstruct
     public void init() {
         transfer = new Transfer(web3j, new RawTransactionManager(web3j, userCredentialsManager.getPayer()));
     }
