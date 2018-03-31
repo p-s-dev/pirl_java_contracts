@@ -27,18 +27,24 @@ abstract class AbstractContractService {
     @Autowired
     BigInteger gasLimit;
 
+    protected Contract contract;
+
     abstract Contract deployContract() throws Exception;
 
-    protected boolean contractDeployed(Contract contract) throws Exception {
-        if (contract == null || isEmpty(contractAddress(contract))) {
+    protected boolean contractDeployed() throws Exception {
+        if (contract == null || isEmpty(contractAddress())) {
             contract = deployContract();
         }
 
-        return contract != null && !isEmpty(contractAddress(contract));
+        return contract != null && !isEmpty(contractAddress());
     }
 
-    protected String contractAddress(Contract contract) {
+    protected String contractAddress() {
         return contract.getContractAddress();
+    }
+
+    public void resetContract() {
+        contract = null;
     }
 
 }

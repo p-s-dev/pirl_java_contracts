@@ -8,8 +8,8 @@ public interface NodeSharingService {
 
     RewardSplitter getRewardSplitter() throws Exception;
 
-    public void registerForUser(int userId) throws Exception;
-    public void withdrawForUser(int userId) throws Exception;
+    void registerForUser(int userId) throws Exception;
+    void withdrawForUser(int userId) throws Exception;
     String getInvestorAddress(BigInteger investorId) throws Exception;
     BigInteger getBalance() throws Exception;
 }

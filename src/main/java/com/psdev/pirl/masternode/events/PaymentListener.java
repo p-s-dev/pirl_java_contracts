@@ -7,6 +7,7 @@ import com.psdev.pirl.masternode.loader.ContractLoader;
 import com.psdev.pirl.masternode.loader.UserCredentialsManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
@@ -17,6 +18,7 @@ import java.util.Set;
 
 @Service
 @Slf4j
+@ConditionalOnProperty("listener.payments")
 public class PaymentListener {
 
     @Autowired
@@ -39,16 +41,13 @@ public class PaymentListener {
     Multimap<String, SimpleMasternodeTransaction> masternodePaymentTransactions =
         Multimaps.synchronizedListMultimap(MultimapBuilder.linkedHashKeys().arrayListValues().build());
 
-//    @Scheduled(initialDelay = STARTUP_DELAY, fixedRate = PER_HOUR)
     public void checkMasternodePaymentTransactions() throws Exception {
+        Set<String> activeMasternodes = nodeRegistrationListener.getActiveMasternodes();
 
         final String PAYER = userCredentialsManager.getPayerAddress();
         final DefaultBlockParameter START =
                 DefaultBlockParameter.valueOf(contractLoader.getPirlMasternodeDepositCreationBlock());
 
-        nodeRegistrationListener.getActiveMasternodes();
-
-        Set<String> activeMasternodes = nodeRegistrationListener.getActiveMasternodes();
         if (activeMasternodes.size() == 0) {
             log.info("waiting for active masternode list");
             return;

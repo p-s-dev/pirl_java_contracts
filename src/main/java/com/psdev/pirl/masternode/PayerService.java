@@ -30,12 +30,15 @@ public class PayerService {
 
     private Transfer transfer;
 
-//    @PostConstruct
-    public void init() {
+    public void pay(String payToAddress, BigDecimal amount, Convert.Unit unit) throws Exception {
+        if (transfer == null) {
+            init();
+        }
+        transfer.sendFunds(payToAddress, amount, unit, gasPrice, payerGasProvided).send();
+    }
+
+    private void init() {
         transfer = new Transfer(web3j, new RawTransactionManager(web3j, userCredentialsManager.getPayer()));
     }
 
-    public void pay(String payToAddress, BigDecimal amount, Convert.Unit unit) throws Exception {
-        transfer.sendFunds(payToAddress, amount, unit, gasPrice, payerGasProvided).send();
-    }
 }

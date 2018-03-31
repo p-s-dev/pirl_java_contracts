@@ -29,13 +29,13 @@ public class NodeSharingServiceImpl extends AbstractContractService implements N
 
     @Override
     public RewardSplitter getRewardSplitter() throws Exception {
-        isTrue(contractDeployed(rewardSplitter), "Error deploying contract");
+        isTrue(contractDeployed(), "Error deploying contract");
         return rewardSplitter;
     }
 
     @Override
     public void registerForUser(int userId) throws Exception {
-        isTrue(contractDeployed(rewardSplitter), "Error deploying contract");
+        isTrue(contractDeployed(), "Error deploying contract");
 
         RewardSplitter userContract = getContractAuthorizedForUser(userId);
 
@@ -62,20 +62,20 @@ public class NodeSharingServiceImpl extends AbstractContractService implements N
 
     @Override
     public void withdrawForUser(int userId) throws Exception {
-        isTrue(contractDeployed(rewardSplitter), "Error deploying contract");
+        isTrue(contractDeployed(), "Error deploying contract");
         RewardSplitter userContract = getContractAuthorizedForUser(userId);
         userContract.withdraw().send();
     }
 
     @Override
     public String getInvestorAddress(BigInteger investorId) throws Exception {
-        isTrue(contractDeployed(rewardSplitter), "Error deploying contract");
+        isTrue(contractDeployed(), "Error deploying contract");
         return rewardSplitter.investors(investorId).send();
     }
 
     @Override
     public BigInteger getBalance() throws Exception {
-        isTrue(contractDeployed(rewardSplitter), "Error deploying contract");
+        isTrue(contractDeployed(), "Error deploying contract");
         return web3j.ethGetBalance(rewardSplitter.getContractAddress(),
                 DefaultBlockParameterName.LATEST).send().getBalance();
     }
@@ -84,7 +84,8 @@ public class NodeSharingServiceImpl extends AbstractContractService implements N
     protected Contract deployContract() throws Exception {
 
         PirlMasternodeDeposit pirlMasternodeDeposit = nodeRegistrationService.enableNodeRegistration();
-        rewardSplitter = contractLoader.loadRewardSplitterContract(pirlMasternodeDeposit.getContractAddress());
+        contract = contractLoader.loadRewardSplitterContract(pirlMasternodeDeposit.getContractAddress());
+        rewardSplitter = (RewardSplitter)contract;
 
         // TODO more verifications of correct initialization
 
@@ -103,7 +104,7 @@ public class NodeSharingServiceImpl extends AbstractContractService implements N
 
         RewardSplitter userContract =
                 RewardSplitter.load(
-                        contractAddress(rewardSplitter), web3j, userCredentialsManager.getUser(userNumber),
+                        contractAddress(), web3j, userCredentialsManager.getUser(userNumber),
                         gasPrice, gasLimit);
         log.info("userContract.isValid=" + userContract.isValid());
 

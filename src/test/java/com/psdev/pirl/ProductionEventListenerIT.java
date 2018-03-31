@@ -1,6 +1,7 @@
 package com.psdev.pirl;
 
 import com.psdev.pirl.masternode.NodeRegistrationService;
+import com.psdev.pirl.masternode.events.NodeRegistrationListener;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,11 +19,14 @@ public class ProductionEventListenerIT {
     @Autowired
     NodeRegistrationService registrationService;
 
+    @Autowired
+    NodeRegistrationListener nodeRegistrationListener;
+
     @Test
     public void testEventListener() throws Exception {
 
         registrationService.enableNodeRegistration();
-        registrationService.startEventListener();
+        nodeRegistrationListener.getActiveMasternodes();
 
     }
 

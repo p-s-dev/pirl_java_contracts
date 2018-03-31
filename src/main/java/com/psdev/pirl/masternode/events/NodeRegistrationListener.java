@@ -6,6 +6,7 @@ import com.psdev.pirl.masternode.loader.UserCredentialsManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.web3j.protocol.Web3j;
 import rx.Observable;
@@ -24,6 +25,7 @@ import static org.web3j.protocol.core.DefaultBlockParameterName.LATEST;
 
 @Service
 @Slf4j
+@ConditionalOnProperty("listener.registrationContract.activeNodes")
 public class NodeRegistrationListener {
     @Autowired
     Web3j web3j;

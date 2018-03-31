@@ -10,6 +10,8 @@ targetCompatibility = 1.8
 repositories {
 //    mavenLocal()
     mavenCentral()
+//    jcenter()
+//    maven { url "https://dl.bintray.com/ethereum/maven/" }
 }
 
 ext {
@@ -28,6 +30,7 @@ dependencies {
     compile "org.projectlombok:lombok:1.16.20"
     compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.0'
     compile group: 'com.google.guava', name: 'guava', version: '24.1-jre'
+//    compile "org.ethereum:ethereumj-core:1.6.+"
 
     testCompile("junit:junit")
     testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: '2.0.0.RELEASE'

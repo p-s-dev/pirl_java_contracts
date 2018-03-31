@@ -17,6 +17,4 @@ public interface NodeRegistrationService {
     Boolean isNodeRegistrationEnabled() throws Exception;
 
     BigInteger getBalance() throws Exception;
-
-    void startEventListener() throws Exception;
 }

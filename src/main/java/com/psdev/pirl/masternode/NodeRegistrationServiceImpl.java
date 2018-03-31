@@ -1,7 +1,6 @@
 package com.psdev.pirl.masternode;
 
 import com.psdev.pirl.contracts.generated.PirlMasternodeDeposit;
-import com.psdev.pirl.masternode.events.NodeRegistrationListener;
 import com.psdev.pirl.masternode.loader.ContractLoader;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,20 +19,12 @@ public class NodeRegistrationServiceImpl extends AbstractContractService impleme
     @Autowired
     ContractLoader contractLoader;
 
-    @Autowired
-    NodeRegistrationListener eventListener;
-
     private PirlMasternodeDeposit pirlMasternodeDeposit;
     private BigInteger nodeRegistrationCost;
 
-//    @EventListener
-//    public void onApplicationEvent(ContextRefreshedEvent event) throws Exception {
-//        enableNodeRegistration();
-//    }
-
     @Override
     public PirlMasternodeDeposit enableNodeRegistration() throws Exception {
-        isTrue(contractDeployed(pirlMasternodeDeposit), "Error deploying pirlMasternodeDeposit contract");
+        isTrue(contractDeployed(), "Error deploying pirlMasternodeDeposit contract");
 
         Boolean isEnabled = pirlMasternodeDeposit.nodeRegistrationEnabled().send();
         if (!isEnabled) {
@@ -48,7 +39,7 @@ public class NodeRegistrationServiceImpl extends AbstractContractService impleme
 
     @Override
     public void registerNodeForUser(int userId) throws Exception {
-        isTrue(contractDeployed(pirlMasternodeDeposit), "Error deploying pirlMasternodeDeposit contract");
+        isTrue(contractDeployed(), "Error deploying pirlMasternodeDeposit contract");
 
         String userAddress = userCredentialsManager.getUserAddress(userId);
 
@@ -59,39 +50,33 @@ public class NodeRegistrationServiceImpl extends AbstractContractService impleme
 
     @Override
     public BigInteger getNodeCount() throws Exception {
-        isTrue(contractDeployed(pirlMasternodeDeposit), "Error deploying pirlMasternodeDeposit contract");
+        isTrue(contractDeployed(), "Error deploying pirlMasternodeDeposit contract");
 
         return pirlMasternodeDeposit.nodeCount().send();
     }
 
     @Override
     public BigInteger getNodeCost() throws Exception {
-        isTrue(contractDeployed(pirlMasternodeDeposit), "Error deploying pirlMasternodeDeposit contract");
+        isTrue(contractDeployed(), "Error deploying pirlMasternodeDeposit contract");
         return pirlMasternodeDeposit.nodeCost().send();
     }
 
     @Override
     public Boolean isNodeRegistrationEnabled() throws Exception {
-        isTrue(contractDeployed(pirlMasternodeDeposit), "Error deploying pirlMasternodeDeposit contract");
+        isTrue(contractDeployed(), "Error deploying pirlMasternodeDeposit contract");
         return pirlMasternodeDeposit.nodeRegistrationEnabled().send();
     }
 
     @Override
     public BigInteger getBalance() throws Exception {
-        isTrue(contractDeployed(pirlMasternodeDeposit), "Error deploying contract");
+        isTrue(contractDeployed(), "Error deploying contract");
         return web3j.ethGetBalance(pirlMasternodeDeposit.getContractAddress(),
                         DefaultBlockParameterName.LATEST).send().getBalance();
     }
 
-    @Override
-    public void startEventListener() throws Exception {
-//        eventListener.start();
-
-    }
-
-
     protected Contract deployContract() throws Exception {
-        pirlMasternodeDeposit = contractLoader.loadPirlMasternodeDeposit();
+        contract = contractLoader.loadPirlMasternodeDeposit();
+        pirlMasternodeDeposit = (PirlMasternodeDeposit)contract;
 
         log.info("pirlMasternodeDeposit=" + pirlMasternodeDeposit.getContractAddress());
         log.info("pirlMasternodeDeposit.isValid=" + pirlMasternodeDeposit.isValid());
@@ -100,7 +85,6 @@ public class NodeRegistrationServiceImpl extends AbstractContractService impleme
         }
 
         nodeRegistrationCost = pirlMasternodeDeposit.nodeCost().send();
-        startEventListener();
         return pirlMasternodeDeposit;
     }
 
@@ -108,7 +92,7 @@ public class NodeRegistrationServiceImpl extends AbstractContractService impleme
 
         PirlMasternodeDeposit userContract =
                 PirlMasternodeDeposit.load(
-                        contractAddress(pirlMasternodeDeposit), web3j, userCredentialsManager.getUser(userNumber),
+                        contractAddress(), web3j, userCredentialsManager.getUser(userNumber),
                         gasPrice, gasLimit);
         log.info("userContract.isValid=" + userContract.isValid());
 
